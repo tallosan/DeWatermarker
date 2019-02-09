@@ -84,7 +84,7 @@ class DSGenerator:
             resize_ratio (int): The ratio to resize. Default is 2 (50%).
         """
         # Note, I'm using Bicubic interpolation here rather than the
-        # defactor standard, Lanczos resampling, as the trade-off between
+        # defacto standard, Lanczos resampling, as the trade-off between
         # quality and speed simply makes sense. We don't need super HD
         # watermarks, and we __do__ want fast dataset generation.
         max_width, max_height = dim_boundary

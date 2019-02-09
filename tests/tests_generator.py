@@ -66,7 +66,7 @@ class TestDSGenerator(TestCase):
         Ensure that we can add watermarks to our images.
         """
         # We'll need to test that the watermark resized correclty, that
-        # it is 'pasted' onto our image, & that the image is saved,
+        # it is 'pasted' onto our image, & that the image is saved.
         with mock.patch.object(
             self.primary_image,
             "paste",
