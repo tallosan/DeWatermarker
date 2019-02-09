@@ -21,6 +21,8 @@
 # SOFTWARE.
 # ================================================================
 
+import copy
+
 from PIL import Image
 
 
@@ -30,7 +32,8 @@ class DSGenerator:
     a given set of images.
     """
     resampling_filter = Image.BICUBIC
-    default_fname = "SAMPLE.png"
+    TRAINING_DIR = "data/training/"
+    WATERMARK_PREFIX = "wm"
 
     @classmethod
     def generate_dataset(cls, watermark, images):
@@ -44,8 +47,17 @@ class DSGenerator:
             images (list of Image): The images that will make up our
                 new dataset.
         """
+        # Watermark each image, and create the corresponding datapoint.
         for image in images:
-            cls._add_watermark(watermark=watermark, image=image)
+            raw_image = copy.deepcopy(image)
+            watermarked_image = cls._add_watermark(
+                watermark=watermark,
+                image=raw_image
+            )
+            cls._save_datapoint(
+                watermarked_image=watermarked_image,
+                original_image=image
+            )
 
     @classmethod
     def _add_watermark(cls, watermark, image):
@@ -67,7 +79,7 @@ class DSGenerator:
         # one hard set.
         POSITION = (0, 0)
         image.paste(im=watermark, box=POSITION, mask=watermark)
-        image.save(fp=cls.default_fname)
+        return image
 
     @classmethod
     def _resize_watermark(cls, watermark, dim_boundary, resize_ratio=2):
@@ -94,3 +106,42 @@ class DSGenerator:
         )
 
         return watermark
+
+    @classmethod
+    def _save_datapoint(cls, watermarked_image, original_image):
+        """
+        Save a datapoint. Each datapoint is made of a 2-tuple, where
+        one element is the watermarked image, an the other the original.
+        Args:
+            watermarked_image (Image): The watermarked image.
+            original_image (Image): The original image that the watermarked
+                image was generated from.
+        """
+        # Save the data-point pair, where the watermarked version will
+        # have a 'WM' prefix in its filename.
+        watermarked_fname, original_image_fname = cls._get_datapoint_fname(
+            fname=original_image.filename
+        )
+
+        watermarked_image.save(fp=watermarked_fname)
+        original_image.save(fp=original_image_fname)
+
+    @classmethod
+    def _get_datapoint_fname(cls, fname):
+        """
+        Generates filenames for a watermarked image and its original.
+        Args:
+            fname (str): The original 
+        """
+        fname = fname.split("/")[-1]
+        watermarked_fname = "{fdir}{wm_prefix}_{fname}".format(
+            fdir=cls.TRAINING_DIR,
+            wm_prefix=cls.WATERMARK_PREFIX,
+            fname=fname,
+        )
+        original_image_fname = "{fdir}{fname}".format(
+            fdir=cls.TRAINING_DIR,
+            fname=fname
+        )
+    
+        return watermarked_fname, original_image_fname
