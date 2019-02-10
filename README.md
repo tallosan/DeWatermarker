@@ -28,3 +28,7 @@ using only one data point, and then to overfit the autoencoder on it.
 
 The next stage in the projet life-cycle will be scaling this up so that it can work on a range of different images, and
 different watermarks. I'll also add some client-facing UI, as it'd be cool to make this accessible to more people.
+
+## License:
+
+MIT
