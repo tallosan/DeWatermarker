@@ -43,52 +43,49 @@ class TestDSGenerator(TestCase):
         self.images = [self.primary_image for _ in range(self.N_IMAGES)]
 
     @mock.patch("data.generator.DSGenerator._add_watermark")
-    @mock.patch("data.generator.DSGenerator._save_datapoint")
-    def test_generate_dataset(self, mock_save_dp, mock_add_watermark):
+    @mock.patch("data.generator.DSGenerator._save_dataset")
+    def test_generate_dataset(self, mock_save_ds, mock_add_watermark):
         """
         Ensure that the dataset generation method calls the correct
         methods, and functions as expected.
         """
-        # We'll mock this so as to not clutter the `mock_calls` attribute
-        # of our `mock_add_watermark` object in the second set of tests below.
         MOCK_ADD_WM = "<MOCK_ADD_WATERMARK>"
         mock_add_watermark.return_value = MOCK_ADD_WM
         DSGenerator.generate_dataset(
             watermark=self.watermark,
             images=self.images
         )
-        for mock_save_call in mock_save_dp.mock_calls:
-            _, _, kwargs = mock_save_call
-            self.assertEqual(kwargs["watermarked_image"], MOCK_ADD_WM)
-            self.assertEqual(kwargs["original_image"], self.primary_image)
 
-        # We'll want to check that we've created a dataset point for each
-        # image in our image set, and that each dataset point is created
-        # correctly, as per the corresponding method call/s.
-        self.assertEqual(len(mock_add_watermark.mock_calls), self.N_IMAGES)
-        for mock_add_watermark_call in mock_add_watermark.mock_calls:
-            _, _, kwargs = mock_add_watermark_call
-            self.assertEqual(kwargs["watermark"], self.watermark)
-            self.assertEqual(kwargs["image"], self.primary_image)
+        expected_dataset = [
+            {"watermarked": MOCK_ADD_WM, "original": self.primary_image}
+            for _ in range(self.N_IMAGES)
+        ]
+        mock_save_ds.assert_called_with(
+            dataset=expected_dataset,
+            fname=DSGenerator.TRAINING_FNAME
+        )
 
-    def test__save_datapoint(self):
+    @mock.patch("builtins.open")
+    @mock.patch("data.generator.cPickle.dump")
+    def test__save_dataset(self, mock_cPickle, mock_open):
         """
         Ensure that we can save a datapoint.
         """
+        MOCK_FILE = mock.MagicMock()
+        mock_open.return_value.__enter__.return_value = MOCK_FILE
         mocked_watermark = copy.deepcopy(self.primary_image)
-        mock_watermark_save = mock.patch.object(mocked_watermark, "save").start()
-        mock_original_save = mock.patch.object(self.primary_image, "save").start()
-
-        DSGenerator._save_datapoint(
-            watermarked_image=mocked_watermark,
-            original_image=self.primary_image
+        mock_dataset = [
+            {"watermarked": mocked_watermark, "original": self.primary_image}
+        ]
+        DSGenerator._save_dataset(
+            dataset=mock_dataset,
+            fname=DSGenerator.TRAINING_FNAME
         )
 
-        wm_fname, org_fname = DSGenerator._get_datapoint_fname(
-            fname=self.primary_image.filename
-        )
-        mock_watermark_save.assert_called_with(fp=wm_fname)
-        mock_original_save.assert_called_with(fp=org_fname)
+        self.assertEqual(len(mock_cPickle.mock_calls), 1)
+        _, mock_args, _ = mock_cPickle.mock_calls[0]
+        self.assertEqual(mock_args[0], mock_dataset)
+        self.assertEqual(mock_args[1], MOCK_FILE)
 
     @mock.patch("data.generator.DSGenerator._resize_watermark")
     def test__add_watermark(self, mock_wm):

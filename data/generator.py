@@ -22,6 +22,7 @@
 # ================================================================
 
 import copy
+import _pickle as cPickle
 
 from PIL import Image
 
@@ -32,7 +33,7 @@ class DSGenerator:
     a given set of images.
     """
     RESAMPLING_FILTER = Image.BICUBIC
-    TRAINING_DIR = "data/training/"
+    TRAINING_FNAME = "data/training/set.pkl"
     WATERMARK_PREFIX = "wm"
 
     @classmethod
@@ -47,17 +48,21 @@ class DSGenerator:
             images (list of Image): The images that will make up our
                 new dataset.
         """
-        # Watermark each image, and create the corresponding datapoint.
+        # Create a dataset, and save it.
+        training_set = []
         for image in images:
             raw_image = copy.deepcopy(image)
             watermarked_image = cls._add_watermark(
                 watermark=watermark,
                 image=raw_image
             )
-            cls._save_datapoint(
-                watermarked_image=watermarked_image,
-                original_image=image
-            )
+            datapoint = {
+                "watermarked": watermarked_image,
+                "original": image
+            }
+            training_set.append(datapoint)
+
+        cls._save_dataset(dataset=training_set, fname=cls.TRAINING_FNAME)
 
     @classmethod
     def _add_watermark(cls, watermark, image):
@@ -108,40 +113,15 @@ class DSGenerator:
         return watermark
 
     @classmethod
-    def _save_datapoint(cls, watermarked_image, original_image):
+    def _save_dataset(cls, dataset, fname):
         """
         Save a datapoint. Each datapoint is made of a 2-tuple, where
         one element is the watermarked image, and the other the original.
         Args:
-            watermarked_image (Image): The watermarked image.
-            original_image (Image): The original image that the watermarked
-                image was generated from.
+            dataset (list of dict of Image): A list of image objects in a
+                dataset, where each element is a datapoint containing a
+                watermarked image, and its original.
+            fname (str): The filename to use for the dataset.
         """
-        # Save the data-point pair, where the watermarked version will
-        # have a 'WM' prefix in its filename.
-        watermarked_fname, original_image_fname = cls._get_datapoint_fname(
-            fname=original_image.filename
-        )
-
-        watermarked_image.save(fp=watermarked_fname)
-        original_image.save(fp=original_image_fname)
-
-    @classmethod
-    def _get_datapoint_fname(cls, fname):
-        """
-        Generates filenames for a watermarked image and its original.
-        Args:
-            fname (str): The original 
-        """
-        fname = fname.split("/")[-1]
-        watermarked_fname = "{fdir}{wm_prefix}_{fname}".format(
-            fdir=cls.TRAINING_DIR,
-            wm_prefix=cls.WATERMARK_PREFIX,
-            fname=fname,
-        )
-        original_image_fname = "{fdir}{fname}".format(
-            fdir=cls.TRAINING_DIR,
-            fname=fname
-        )
-    
-        return watermarked_fname, original_image_fname
+        with open(fname, "wb") as fp:
+            cPickle.dump(dataset, fp)
