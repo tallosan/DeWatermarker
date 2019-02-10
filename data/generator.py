@@ -31,7 +31,7 @@ class DSGenerator:
     Generates training & validation datasets for a specific watermark on
     a given set of images.
     """
-    resampling_filter = Image.BICUBIC
+    RESAMPLING_FILTER = Image.BICUBIC
     TRAINING_DIR = "data/training/"
     WATERMARK_PREFIX = "wm"
 
@@ -90,9 +90,9 @@ class DSGenerator:
         Args:
             watermark (Image): The watermark to resize.
             dim_boundary (tuple of int): These are just the dimensions of
-                the image we're resizing to. No matter how we resize our
-                watermark, the dimensions must be within this boundary, or
-                the watermark will overflow from the base image.
+                the image we're adding the watermark to. No matter how we
+                resize our watermark, the dimensions must be within this
+                boundary, or the watermark will overflow from the target image.
             resize_ratio (int): The ratio to resize. Default is 2 (50%).
         """
         # Note, I'm using Bicubic interpolation here rather than the
@@ -102,7 +102,7 @@ class DSGenerator:
         max_width, max_height = dim_boundary
         watermark.thumbnail(
             size=(max_width // resize_ratio, max_height // resize_ratio),
-            resample=cls.resampling_filter
+            resample=cls.RESAMPLING_FILTER
         )
 
         return watermark
@@ -111,7 +111,7 @@ class DSGenerator:
     def _save_datapoint(cls, watermarked_image, original_image):
         """
         Save a datapoint. Each datapoint is made of a 2-tuple, where
-        one element is the watermarked image, an the other the original.
+        one element is the watermarked image, and the other the original.
         Args:
             watermarked_image (Image): The watermarked image.
             original_image (Image): The original image that the watermarked

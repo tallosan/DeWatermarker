@@ -2,7 +2,7 @@
 
 The goal of this project is to write software that can remove watermarks from images, using the power of autoencoders.
 
-The actual implementation can be divided into two stages -- data-set generation, & encoder training.
+The actual implementation can be divided into two stages -- data-set generation & encoder training.
 
 ## Data-Set Generation:
 

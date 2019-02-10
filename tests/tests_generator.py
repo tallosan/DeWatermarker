@@ -76,26 +76,19 @@ class TestDSGenerator(TestCase):
         Ensure that we can save a datapoint.
         """
         mocked_watermark = copy.deepcopy(self.primary_image)
-        with mock.patch.object(
-            mocked_watermark,
-            "save",
-            wraps=mocked_watermark.save
-        ) as mock_watermark_save:
-            with mock.patch.object(
-                self.primary_image,
-                "save",
-                wraps=self.primary_image.save
-            ) as mock_original_save:
-                DSGenerator._save_datapoint(
-                    watermarked_image=mocked_watermark,
-                    original_image=self.primary_image
-                )
-                wm_fname, org_fname = DSGenerator._get_datapoint_fname(
-                    fname=self.primary_image.filename
-                )
+        mock_watermark_save = mock.patch.object(mocked_watermark, "save").start()
+        mock_original_save = mock.patch.object(self.primary_image, "save").start()
 
-                mock_watermark_save.assert_called_with(fp=wm_fname)
-                mock_original_save.assert_called_with(fp=org_fname)
+        DSGenerator._save_datapoint(
+            watermarked_image=mocked_watermark,
+            original_image=self.primary_image
+        )
+
+        wm_fname, org_fname = DSGenerator._get_datapoint_fname(
+            fname=self.primary_image.filename
+        )
+        mock_watermark_save.assert_called_with(fp=wm_fname)
+        mock_original_save.assert_called_with(fp=org_fname)
 
     @mock.patch("data.generator.DSGenerator._resize_watermark")
     def test__add_watermark(self, mock_wm):
@@ -145,5 +138,5 @@ class TestDSGenerator(TestCase):
                     test_width // test_resize_ratio,
                     test_height // test_resize_ratio
                 ),
-                resample=DSGenerator.resampling_filter
+                resample=DSGenerator.RESAMPLING_FILTER
             )
