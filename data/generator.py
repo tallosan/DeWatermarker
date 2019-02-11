@@ -22,6 +22,7 @@
 # ================================================================
 
 import copy
+import numpy
 import _pickle as cPickle
 
 from PIL import Image
@@ -56,10 +57,11 @@ class DSGenerator:
                 watermark=watermark,
                 image=raw_image
             )
-            datapoint = {
-                "watermarked": watermarked_image,
-                "original": image
-            }
+
+            datapoint = cls._create_datapoint(
+                watermarked=watermarked_image,
+                original=image
+            )
             training_set.append(datapoint)
 
         cls._save_dataset(dataset=training_set, fname=cls.TRAINING_FNAME)
@@ -111,6 +113,13 @@ class DSGenerator:
         )
 
         return watermark
+
+    @classmethod
+    def _create_datapoint(cls, watermarked, original):
+        return {
+            "watermarked": numpy.asarray(watermarked),
+            "original": numpy.asarray(original)
+        }
 
     @classmethod
     def _save_dataset(cls, dataset, fname):

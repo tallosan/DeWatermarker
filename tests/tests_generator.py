@@ -44,26 +44,55 @@ class TestDSGenerator(TestCase):
 
     @mock.patch("data.generator.DSGenerator._add_watermark")
     @mock.patch("data.generator.DSGenerator._save_dataset")
-    def test_generate_dataset(self, mock_save_ds, mock_add_watermark):
+    @mock.patch("data.generator.DSGenerator._create_datapoint")
+    def test_generate_dataset(
+        self,
+        mock_create_datapoint,
+        mock_save_ds,
+        mock_add_watermark
+    ):
         """
         Ensure that the dataset generation method calls the correct
         methods, and functions as expected.
         """
         MOCK_ADD_WM = "<MOCK_ADD_WATERMARK>"
         mock_add_watermark.return_value = MOCK_ADD_WM
+        MOCK_CREATE_DATAPOINT = {
+            "watermarked": MOCK_ADD_WM,
+            "original": self.primary_image
+        }
+        mock_create_datapoint.return_value = MOCK_CREATE_DATAPOINT
+
         DSGenerator.generate_dataset(
             watermark=self.watermark,
             images=self.images
         )
 
-        expected_dataset = [
-            {"watermarked": MOCK_ADD_WM, "original": self.primary_image}
-            for _ in range(self.N_IMAGES)
-        ]
+        expected_dataset = [MOCK_CREATE_DATAPOINT for _ in range(self.N_IMAGES)]
         mock_save_ds.assert_called_with(
             dataset=expected_dataset,
             fname=DSGenerator.TRAINING_FNAME
         )
+
+    @mock.patch("data.generator.numpy.asarray")
+    def test__create_datapoint(self, mock_nump_asarray):
+        """
+        Ensure that we can create a datapoint.
+        """
+        MOCK_NUMPY_IMG = "<MOCK_NUMPYAS_ARRAY>"
+        mock_nump_asarray.return_value = MOCK_NUMPY_IMG
+        test_datapoint = DSGenerator._create_datapoint(
+            watermarked=self.primary_image,
+            original=self.primary_image
+        )
+
+        self.assertEqual(test_datapoint["watermarked"], MOCK_NUMPY_IMG)
+        self.assertEqual(test_datapoint["original"], MOCK_NUMPY_IMG)
+
+        self.assertEqual(len(mock_nump_asarray.mock_calls), 2)
+        for mock_asarray_call in mock_nump_asarray.mock_calls:
+            _, args, _ = mock_asarray_call
+            self.assertEqual(args[0], self.primary_image)
 
     @mock.patch("builtins.open")
     @mock.patch("data.generator.cPickle.dump")
