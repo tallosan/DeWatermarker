@@ -32,7 +32,7 @@ class TestDeWatermarkerDataset(TestCase):
     """
 
     def setUp(self):
-        self.root_dir = "data/training/set.pkl"
+        self.root_dir = "/test_dir"
         self.transform = None
 
     @mock.patch("builtins.open")
